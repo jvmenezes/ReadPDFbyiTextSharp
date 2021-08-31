@@ -3,6 +3,7 @@ using iTextSharp.text;
 using iTextSharp.text.exceptions;
 using iTextSharp.text.pdf;
 using iTextSharp.tool.xml;
+using Syncfusion.Pdf.Parsing;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,15 +12,37 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Document = iTextSharp.text.Document;
 
-
 namespace ReadPDF
 {
 
     public class Program
     {
+        /*
+        PDF1: 
+        Mensagem erro: "Rebuild failed: Dictionary key endstream is not a name. at file pointer 506343"
+        Solução aplicada na OPÇÃO 2 e 3 resolvem o esse incidente
+        */
         public static string pdf1 { get; } = @"C:\ME\Anexos\MALDICAO_DO_PDF_1.pdf";
+
+        /*
+        PDF2: 
+        Mensagem erro: "Rebuild failed: Dictionary key R is not a name. at file pointer 4169"
+        Ainda sem solução
+        */
         public static string pdf2 { get; } = @"C:\ME\Anexos\MALDICAO_DO_PDF_2.pdf";
 
+        /*
+        PDF3: 
+        Quando reparado o PDF via site "https://www.ilovepdf.com/pt/reparar-pdf", funciona normalmente        
+        */
+        public static string pdf3 { get; } = @"C:\ME\Anexos\MALDICAO_DO_PDF_2_repaired.pdf";
+
+        /*
+        PDF4: 
+        Quando reparado o PDF via nugget "Syncfusion.Pdf.Net.Core", não funcionou
+        Feito um teste no metodo repairPDF() e salvando o PDF na area de trabalho para depois utiliza-lo aqui pra ver se iria funcionar
+        */
+        public static string pdf4 { get; } = @"C:\ME\Anexos\MALDICAO_DO_PDF_2_repaired_BY_Syncfusion_Pdf_Net_Core.pdf"; //reparado via nugget "Syncfusion.Pdf.Net.Core"
 
         static void Main(string[] args)
         {
@@ -33,7 +56,27 @@ namespace ReadPDF
 
             var fileB641 = Convert.FromBase64String(file2);
 
+            repairPDF();
             ConvertHTMLtoBase64();
+        }
+
+        private static void repairPDF()
+        {
+            using (FileStream pdfStream = new FileStream(pdf2, FileMode.Open, FileAccess.Read))
+            {
+                //load the corrupted document by setting the openAndRepair flag to true to repair the document.
+                PdfLoadedDocument loadedPdfDocument = new PdfLoadedDocument(pdfStream, true);
+
+                //Do PDF processing.
+
+                //Save the document.
+                using (FileStream outputStream = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "MALDICAO_DO_PDF_2_repaired_BY_Syncfusion_Pdf_Net_Core.pdf"), FileMode.Create))
+                {
+                    loadedPdfDocument.Save(outputStream);
+                }
+                //Close the document.
+                loadedPdfDocument.Close(true);
+            }
         }
 
         private static Byte[] ConvertHTMLtoBase64()
@@ -127,18 +170,18 @@ namespace ReadPDF
                     for (int k = 0; k < pdfFiles.Count; k++)
                     {
                         //Opção 1
-                        //var raf = new RandomAccessFileOrArray(pdfFiles[k]);
-                        //finalPdf = new PdfReader(raf: raf, ownerPassword: null);
-
-                        //Opção 2
                         //finalPdf = new PdfReader(pdfFiles[k]);
 
-                        //Opção 3
-                        var properties = new ReaderProperties();
-                        properties.SetPartialRead(true);
+                        //Opção 2
+                        var raf = new RandomAccessFileOrArray(pdfFiles[k]);
+                        finalPdf = new PdfReader(raf: raf, ownerPassword: null);
 
-                        Stream stream = new MemoryStream(pdfFiles[k]);
-                        finalPdf = new PdfReader(properties: properties, isp: stream);
+                        //Opção 3
+                        //var properties = new ReaderProperties();
+                        //properties.SetPartialRead(true);
+                        //
+                        //Stream stream = new MemoryStream(pdfFiles[k]);
+                        //finalPdf = new PdfReader(properties: properties, isp: stream);
 
 
 

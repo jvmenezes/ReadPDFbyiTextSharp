@@ -9,6 +9,7 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.11.36" />
     <PackageReference Include="iTextSharp" Version="5.5.13.2" />
     <PackageReference Include="itextsharp.xmlworker" Version="5.5.13.2" />
+    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="19.2.0.59" />
   </ItemGroup>
 
 </Project>
