@@ -33,9 +33,9 @@ namespace ReadPDF
 
         /*
         PDF3: 
-        Quando reparado o PDF via site "https://www.ilovepdf.com/pt/reparar-pdf", funciona normalmente        
+        Quando reparado o PDF2 via site "https://www.ilovepdf.com/pt/reparar-pdf", funciona normalmente        
         */
-        public static string pdf3 { get; } = @"C:\ME\Anexos\MALDICAO_DO_PDF_2_repaired.pdf";
+        public static string pdf3 { get; } = @"C:\ME\Anexos\MALDICAO_DO_PDF_2_repaired_BY_ilovePDF.pdf";
 
         /*
         PDF4: 
@@ -49,20 +49,20 @@ namespace ReadPDF
             Byte[] bytes = File.ReadAllBytes(pdf1);
             String file = Convert.ToBase64String(bytes);
 
-            var fileB64 = Convert.FromBase64String(file);
+            var file1Base64 = Convert.FromBase64String(file);
 
             Byte[] bytes1 = File.ReadAllBytes(pdf2);
             String file2 = Convert.ToBase64String(bytes1);
 
-            var fileB641 = Convert.FromBase64String(file2);
+            var file2Base64 = Convert.FromBase64String(file2);          
 
-            repairPDF();
+            repairPdfBySyncfusion();
             ConvertHTMLtoBase64();
         }
 
-        private static void repairPDF()
+        private static void repairPdfBySyncfusion()
         {
-            using (FileStream pdfStream = new FileStream(pdf2, FileMode.Open, FileAccess.Read))
+            using (FileStream pdfStream = new FileStream(pdf2, FileMode.Open, FileAccess.ReadWrite))
             {
                 //load the corrupted document by setting the openAndRepair flag to true to repair the document.
                 PdfLoadedDocument loadedPdfDocument = new PdfLoadedDocument(pdfStream, true);
@@ -140,8 +140,7 @@ namespace ReadPDF
             var bytes1 = new List<byte[]>();
 
             bytes1.Add(arrayBytes);
-            bytes1.Add(bytes);
-
+            bytes1.Add(bytes);            
 
             var mergedBytes = MergePDFs(bytes1);
 
@@ -227,7 +226,75 @@ namespace ReadPDF
             }
         }
 
+        static byte[] CreateMergedPDF(string targetPDF, List<byte[]> files/*, string sourceDir*/)
+        {
+            using (FileStream fileStream = new FileStream(targetPDF, FileMode.Create))
+            {
+                Document pdfDoc = new Document(PageSize.A4);
+                PdfCopy pdf = new PdfCopy(pdfDoc, fileStream);
+                pdfDoc.Open();
+                //var files = Directory.GetFiles(sourceDir);
+                Console.WriteLine("Merging files count: " + files.Count);
+                int i = 1;
 
+                foreach (var file in files)
+                {
+                    Console.WriteLine(i + ". Adding: " + file);
+                    pdf.AddDocument(new PdfReader(file));
+                    i++;
+                }
+
+                if (pdfDoc != null)
+                    pdfDoc.Close();
+
+                Console.WriteLine("SpeedPASS PDF merge complete.");
+
+                var memoryStream = new MemoryStream();
+
+                fileStream.Position = 0;
+                fileStream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+            
+        }
+
+        public static byte[] MergePDFs2(List<byte[]> pdfFiles)
+        {
+            if (pdfFiles.Count > 1)
+            {
+                PdfReader finalPdf;
+                Document pdfContainer;
+                PdfWriter pdfCopy;
+                MemoryStream msFinalPdf = new MemoryStream();
+
+                finalPdf = new PdfReader(pdfFiles[0]);
+                pdfContainer = new Document();
+                pdfCopy = new PdfSmartCopy(pdfContainer, msFinalPdf);
+
+                pdfContainer.Open();
+
+                for (int k = 0; k < pdfFiles.Count; k++)
+                {
+                    finalPdf = new PdfReader(pdfFiles[k]);
+                    for (int i = 1; i < finalPdf.NumberOfPages + 1; i++)
+                    {
+                        ((PdfSmartCopy)pdfCopy).AddPage(pdfCopy.GetImportedPage(finalPdf, i));
+                    }
+                    pdfCopy.FreeReader(finalPdf);
+
+                }
+                finalPdf.Close();
+                pdfCopy.Close();
+                pdfContainer.Close();
+
+                return msFinalPdf.ToArray();
+            }
+            else if (pdfFiles.Count == 1)
+            {
+                return pdfFiles[0];
+            }
+            return null;
+        }
 
         public static Stream GetFileStream(string pFullPath, string pFileName = default)
         {
